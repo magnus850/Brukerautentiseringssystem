@@ -5,7 +5,8 @@ import cutie
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(
+)
 
 max_passord_lengde = 24
 min_passord_lengde = 6
@@ -13,10 +14,10 @@ max_brukernavn_lengde = 18
 min_brukernavn_lengde = 6
 
 conn = mariadb.connect(
-    user = os.getenv('bruker'),
-    password= os.getenv('passord'),
-    host = os.getenv('host'),
-    database = os.getenv('navn'),
+    user = os.getenv('DB_BRUKER'),
+    password= os.getenv('DB_PASSORD'),
+    host = os.getenv('DB_HOST'),
+    database = os.getenv('DB'),
     unix_socket = '/opt/homebrew/var/mysql/mysql.sock'
     )
 
@@ -41,17 +42,26 @@ def lag_bruker():
         return
     else:
         while True:
+            tall = 0
             nytt_passord = pwinput.pwinput(prompt='Passord(6-24): ', mask = '*')
-            if min_passord_lengde <= len(nytt_passord) <= max_passord_lengde:
+            for tegn in list(nytt_passord):
+                if tegn.isdigit():
+                    tall += 1
+            if min_passord_lengde >= len(nytt_passord):
+                print('Hold passorlengde innen 6-24 tegn')
+            if max_passord_lengde <= len(nytt_passord):
+                print('Hold passorlengde innen 6-24 tegn')
+            if tall < 3:
+                print('Passord må inneholde minst 3 tall')
+            if min_passord_lengde <= len(nytt_passord) <= max_passord_lengde and tall >= 3:
                 break
-            print('Hold passorlengde innen 6-24 tegn')
             
         passord_hashing(nytt_passord, nytt_brukernavn, None, None, None)
     
     
 def logg_inn():
     while True:
-        brukernavn = input('Brukernavn(6-18): ')
+        brukernavn = input('Brukernavn: ')
         if min_brukernavn_lengde <= len(brukernavn) <= max_brukernavn_lengde:
             break
         print('Hold brukernavnlengde innen 6-18 tegn')
@@ -74,10 +84,11 @@ def logg_inn():
         
 def logg_inn_passord(resultat):
     while True:
-        passord = pwinput.pwinput(prompt='Passord(6-24): ', mask = '*')
+        passord = pwinput.pwinput(prompt='Passord: ', mask = '*')
         if min_passord_lengde <= len(passord) <= max_passord_lengde:
             break
-        print('Hold passorlengde innen 6-24 tegn')
+
+            
     liste = list(resultat)
     passord_hashing(passord, None, liste[0], liste[1], resultat)
         
@@ -85,6 +96,7 @@ def logg_inn_passord(resultat):
 def registrer_bruker(passord, brukernavn):
     cur.execute('insert into brukere (bruker, passord) values (%s, %s)',
         (brukernavn, passord))
+    conn.commit()
     if cur.fetchone:
         print(f'Du er nå logget inn som {brukernavn}')
         cur.execute('select id from brukere where bruker = %s', (brukernavn,))
@@ -135,10 +147,19 @@ def endre_passord_eller_logg_ut(id):
         return
     if mul == 'Endre passord':
         while True:
+            tall = 0
             nytt_passord = pwinput.pwinput(prompt='Passord(6-24): ', mask = '*')
-            if min_passord_lengde <= len(nytt_passord) <= max_passord_lengde:
+            for tegn in list(nytt_passord):
+                if tegn.isdigit():
+                    tall += 1
+            if min_passord_lengde >= len(nytt_passord):
+                print('Hold passorlengde innen 6-24 tegn')
+            if max_passord_lengde <= len(nytt_passord):
+                print('Hold passorlengde innen 6-24 tegn')
+            if tall < 3:
+                print('Passord må inneholde minst 3 tall')
+            if min_passord_lengde <= len(nytt_passord) <= max_passord_lengde and tall >= 3:
                 break
-            print('Hold passorlengde innen 6-24 tegn')
         passord_hashing(nytt_passord, None, id, None, None)
         return
         
@@ -147,14 +168,16 @@ def registrer_nytt_passord(passord, id):
     cur.execute(
     'UPDATE brukere SET passord = %s WHERE id = %s',
     (passord, id))
+    conn.commit()
     if cur.fetchone:
         print('Du har endret passord')
         endre_passord_eller_logg_ut(id)
     
-print('Velkommen til Kurdistans offisielle brukerautentiseringsystem!')
+print('Velkommen til Kurdistans offisielle brukerautentiseringssystem!')
 valg = [
     'Lag bruker',
-    'Logg inn'
+    'Logg inn',
+    'Avslutt'
 ]
 
 def lag_bruker_logg_inn():
@@ -163,9 +186,10 @@ def lag_bruker_logg_inn():
         lag_bruker() 
     if valgt_valg == 'Logg inn':
         print('Logg inn')
-        logg_inn(
-                )
+        logg_inn()
+    if valgt_valg == 'Avslutt':
+        conn.close()
 
 lag_bruker_logg_inn()
-conn.commit()
-conn.close()
+
+    
