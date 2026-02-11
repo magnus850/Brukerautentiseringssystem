@@ -10,7 +10,7 @@ load_dotenv(
 
 max_passord_lengde = 24
 min_passord_lengde = 6
-max_brukernavn_lengde = 18    
+max_brukernavn_lengde = 15    
 min_brukernavn_lengde = 6
 
 conn = mariadb.connect(
@@ -70,7 +70,7 @@ def logg_inn():
         'SELECT id, passord FROM brukere WHERE bruker = %s',
         (brukernavn,))
     resultat = cur.fetchone()
-    if resultat == None:
+    if resultat:
         print('Finnes ikke bruker med det brukernavnet')
         print('Prøv et annet brukernavn?')
         ja = ja_nei[cutie.select(ja_nei)]
